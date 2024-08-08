@@ -1,5 +1,5 @@
- document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-   e.preventDefault();
+document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+   e.preventDefault(); // Prevents the default form submission behavior
  
    const formData = new FormData();
    formData.append('pdf', document.getElementById('pdfFile').files[0]);

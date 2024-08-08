@@ -7,15 +7,15 @@ const { createFFmpeg, fetchFile } = ffmpeg;
 
 const upload = multer({ dest: '/tmp/uploads/' });
 
-module.exports = async (req, res) => {
+module.exports = (req, res) => {
   if (req.method === 'POST') {
-    try {
-      upload.single('pdf')(req, res, async (err) => {
-        if (err) {
-          return res.status(500).send('File upload error');
-        }
+    upload.single('pdf')(req, res, async (err) => {
+      if (err) {
+        return res.status(500).send('File upload error');
+      }
 
-        const pdfPath = req.file.path;
+      const pdfPath = req.file.path;
+      try {
         const pdfBytes = fs.readFileSync(pdfPath);
         const pdfDoc = await PDFDocument.load(pdfBytes);
         const pages = pdfDoc.getPages();
@@ -57,11 +57,11 @@ module.exports = async (req, res) => {
           imagePaths.forEach(fs.unlinkSync);
           fs.unlinkSync(outputPath);
         });
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).send('An error occurred while processing the PDF.');
-    }
+      } catch (error) {
+        console.error(error);
+        res.status(500).send('An error occurred while processing the PDF.');
+      }
+    });
   } else {
     res.status(405).send('Method Not Allowed');
   }
