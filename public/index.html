@@ -4,16 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF to Video Converter</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>PDF to Video Converter</h1>
-  <form id="uploadForm" enctype="multipart/form-data">
-    <input type="file" id="pdfFile" name="pdf" accept="application/pdf" required>
-    <button type="submit">Convert</button>
-  </form>
-  <div id="output"></div>
-  <div id="loading" style="display:none;">Converting... Please wait.</div>
-  <script src="/script.js"></script>
+  <div class="container">
+    <h1>PDF to Video Converter</h1>
+    <form id="pdf-upload-form" enctype="multipart/form-data">
+      <input type="file" name="pdf" accept=".pdf" required>
+      <button type="submit">Convert to Video</button>
+    </form>
+    <div id="video-container" class="hidden">
+      <video id="converted-video" controls></video>
+      <a id="download-link" class="download-link hidden" href="#" download>Download Video</a>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>

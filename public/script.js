@@ -1,32 +1,30 @@
-document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-   e.preventDefault(); // Prevents the default form submission behavior
+const form = document.getElementById('pdf-upload-form');
+ const videoContainer = document.getElementById('video-container');
+ const convertedVideo = document.getElementById('converted-video');
+ const downloadLink = document.getElementById('download-link');
  
-   const formData = new FormData();
-   formData.append('pdf', document.getElementById('pdfFile').files[0]);
+ form.addEventListener('submit', async (event) => {
+   event.preventDefault();
  
-   document.getElementById('loading').style.display = 'block';
-   document.getElementById('output').innerHTML = '';
+   const formData = new FormData(form);
  
    try {
-     const response = await fetch('/api/convert', {
+     const response = await fetch('/convert', {
        method: 'POST',
        body: formData,
      });
  
      if (response.ok) {
-       const blob = await response.blob();
-       const url = URL.createObjectURL(blob);
-       const a = document.createElement('a');
-       a.href = url;
-       a.download = 'video.mp4';
-       a.textContent = 'Download your video';
-       document.getElementById('output').appendChild(a);
+       const { videoUrl } = await response.json();
+       convertedVideo.src = videoUrl;
+       downloadLink.href = videoUrl;
+       downloadLink.classList.remove('hidden');
+       videoContainer.classList.remove('hidden');
      } else {
-       document.getElementById('output').textContent = 'Error converting PDF to video';
+       alert('Error converting PDF to video');
      }
    } catch (error) {
-     document.getElementById('output').textContent = 'An error occurred during conversion.';
-   } finally {
-     document.getElementById('loading').style.display = 'none';
+     console.error('Error:', error);
+     alert('An error occurred. Please try again later.');
    }
  });
