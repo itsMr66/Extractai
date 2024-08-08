@@ -11,3 +11,9 @@ form {
 #output {
   margin-top: 20px;
 }
+
+#loading {
+  font-size: 18px;
+  font-weight: bold;
+  color: blue;
+}
