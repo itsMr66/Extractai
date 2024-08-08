@@ -1,31 +1,63 @@
-const express = require('express');
+const { PDFDocument } = require('pdf-lib');
 const multer = require('multer');
-const fs = require('fs');
-const { exec } = require('child_process');
 const path = require('path');
+const fs = require('fs');
+const ffmpeg = require('@ffmpeg/ffmpeg');
+const { createFFmpeg, fetchFile } = ffmpeg;
 
-const app = express();
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: '/tmp/uploads/' });
 
-app.post('/api/convert', upload.single('pdf'), (req, res) => {
-    const pdfPath = req.file.path;
-    const outputPath = path.join('uploads', `${req.file.filename}.mp4`);
+module.exports = (req, res) => {
+  if (req.method === 'POST') {
+    upload.single('pdf')(req, res, async (err) => {
+      if (err) {
+        return res.status(500).send('File upload error');
+      }
 
-    // Run FFMpeg command to convert PDF to video
-    const ffmpegCommand = `ffmpeg -f lavfi -i color=c=white:s=1280x720:d=5 -vf "drawtext=fontfile=/path/to/font.ttf:fontsize=40:textfile=${pdfPath}:x=(w-text_w)/2:y=(h-text_h)/2" -t 5 ${outputPath}`;
+      const pdfPath = req.file.path;
+      const pdfBytes = fs.readFileSync(pdfPath);
+      const pdfDoc = await PDFDocument.load(pdfBytes);
+      const pages = pdfDoc.getPages();
 
-    exec(ffmpegCommand, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`Error: ${error.message}`);
-            return res.status(500).send('Error converting PDF to video');
-        }
+      const ffmpeg = createFFmpeg({ log: true });
+      await ffmpeg.load();
 
-        res.download(outputPath, 'video.mp4', (err) => {
-            if (err) console.error(err);
-            fs.unlinkSync(pdfPath);
-            fs.unlinkSync(outputPath);
-        });
+      const imagePromises = pages.map(async (page, index) => {
+        const { width, height } = page.getSize();
+        const jpegBytes = await page.renderToJPEG({ width, height });
+        const imagePath = `/tmp/uploads/page-${index}.jpg`;
+        fs.writeFileSync(imagePath, jpegBytes);
+        return imagePath;
+      });
+
+      const imagePaths = await Promise.all(imagePromises);
+
+      const inputFiles = imagePaths.map((imgPath, idx) => {
+        const ffmpegPath = `/data/page-${idx}.jpg`;
+        ffmpeg.FS('writeFile', ffmpegPath, await fetchFile(imgPath));
+        return ffmpegPath;
+      });
+
+      const outputPath = '/tmp/uploads/output.mp4';
+      await ffmpeg.run(
+        '-framerate', '1',
+        '-i', '/data/page-%d.jpg',
+        '-c:v', 'libx264',
+        '-pix_fmt', 'yuv420p',
+        outputPath
+      );
+
+      const data = ffmpeg.FS('readFile', 'output.mp4');
+      fs.writeFileSync(outputPath, data);
+
+      res.download(outputPath, 'video.mp4', (err) => {
+        if (err) console.error(err);
+        fs.unlinkSync(pdfPath);
+        imagePaths.forEach(fs.unlinkSync);
+        fs.unlinkSync(outputPath);
+      });
     });
-});
-
-module.exports = app;
+  } else {
+    res.status(405).send('Method Not Allowed');
+  }
+};
