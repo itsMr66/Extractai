@@ -1,0 +1,12 @@
+{
+  "name": "pdf-to-video",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node api/convert.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "multer": "^1.4.2"
+  }
+}
